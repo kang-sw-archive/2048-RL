@@ -1,0 +1,8 @@
+venv/ 
+checkpoint/
+models*/
+run-sample/
+records/
+_Resharper*
+__pycache__
+log/

@@ -1,0 +1,11 @@
+.vs
+env/
+venv-wsl/
+.ipynb_checkpoints
+short/my_logs/
+__pycache__
+__model copy*
+proj/__model*
+_Resharper.Caches/
+proj-new/env_result.gif
+short/
