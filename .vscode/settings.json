@@ -2,10 +2,7 @@
     "python.languageServer": "Pylance",
     "jupyter.jupyterServerType": "local",
     "python.analysis.extraPaths": [
-        "./proj-new"
-    ],
-    "python.autoComplete.extraPaths": [
-        "./proj-new"
+        "./proj-pyt"
     ],
     "files.exclude": {
         "**/.git": true,
@@ -18,5 +15,5 @@
         "**/.idea": true,
         "**/__pycache__": true,
         "**/_ReSharper.Caches": true,
-    }
+    },
 }
