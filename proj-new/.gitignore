@@ -1,5 +1,5 @@
 venv/ 
-checkpoint/
+checkpoint*/
 models*/
 run-sample/
 records/

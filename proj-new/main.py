@@ -16,21 +16,22 @@ from tf_agents.agents import tf_agent
 from tf_agents.environments.tf_environment import TFEnvironment
 from tf_agents.replay_buffers.replay_buffer import ReplayBuffer
 from tensorflow import keras
+from multiprocessing import cpu_count
 
 # %% constants
 NUM_TOTAL_STEPS = int(1e6)
 
-UPDATE_PERIOD = 4
-TARGET_UPDATE_PERIOD = 2000
+UPDATE_PERIOD = 8
+TARGET_UPDATE_PERIOD = 5000
 
-REPLAY_BUFFER_MAXLEN = 100000
+REPLAY_BUFFER_MAXLEN = 1000000
 
 ITER_NEWLINE_PERIOD = 250
 ITER_CHECKPOINT_PERIOD = 1000
 ITER_LOG_PERIOD = 250
 
-SAMPLE_BATCH_SIZE = 64
-PARALLEL_STEPS = 4
+SAMPLE_BATCH_SIZE = 32
+PARALLEL_STEPS = cpu_count()
 
 CHECKPOINT_DIR = "./checkpoint"
 POLICY_SAVE_DIR = "./models"
@@ -77,8 +78,8 @@ env = env2048.Game2048Env(max_hype_evaluator)
 tf_env = TFPyEnvironment(env)
 
 preprocessing_layer = keras.layers.Lambda(lambda obs: tf.cast(obs, np.float32))
-conv_layer_params = [(4096, (3, 3), 1), (1024, (1, 3), 1), (1024, (3, 1), 1)]
-fc_layer_params = [2048, 1024, 512, 256]
+conv_layer_params = [(1024, (3, 3), 1), (512, (2, 2), 1)]
+fc_layer_params = [512, 256]
 
 from tensorflow.keras import layers
 
@@ -195,24 +196,20 @@ collect_driver = DynamicStepDriver(
 
 from tf_agents.policies.random_tf_policy import RandomTFPolicy
 
-initial_collect_policy = RandomTFPolicy(tf_env.time_step_spec(), tf_env.action_spec())
-init_driver = DynamicStepDriver(
-    tf_env,
-    initial_collect_policy,
-    observers=replay_buffer_observer + training_metrics + training_metrics_2,
-    num_steps=update_period,
-)
-final_time_step, final_policty_state = init_driver.run()
+# initial_collect_policy = RandomTFPolicy(tf_env.time_step_spec(), tf_env.action_spec())
+# init_driver = DynamicStepDriver(
+#     tf_env,
+#     initial_collect_policy,
+#     observers=replay_buffer_observer + training_metrics + training_metrics_2,
+#     num_steps=update_period,
+# )
+# final_time_step, final_policty_state = init_driver.run()
 
 # %% Dataset
 dataset = replay_buffer.as_dataset(sample_batch_size=SAMPLE_BATCH_SIZE, num_steps=2, num_parallel_calls=PARALLEL_STEPS)
 
 # %% Checkpoint
-from tf_agents.utils.common import function
 from tf_agents.utils.common import Checkpointer
-
-collect_driver.run = function(collect_driver.run)
-agent.train = function(agent.train)
 
 train_checkpointer = Checkpointer(
     ckpt_dir=CHECKPOINT_DIR,
@@ -234,6 +231,11 @@ def save_policy():
 
 
 # %% Iterate
+from tf_agents.utils.common import function
+
+collect_driver.run = function(collect_driver.run)
+agent.train = function(agent.train)
+
 fp = open("log/log-{}.txt".format(agent.train_step_counter.value().numpy()), "w")
 fp.write(", ".join(["Step"] + [type(f).__name__ for f in training_metrics]) + "\n")
 
@@ -247,7 +249,8 @@ def train_agent(n_iterations):
         trajectories, buffer_info = next(iterator)
         train_loss = agent.train(trajectories)
 
-        print("\r{} loss:{:.5f}".format(iteration, train_loss.loss.numpy()), end="")
+        print("\r{} loss:{:.5f}".format(
+            agent.train_step_counter.value().numpy(), train_loss.loss.numpy()), end="")
 
         if iteration % ITER_LOG_PERIOD == 0:
             fp.write(", ".join(["{}".format(agent.train_step_counter.value().numpy())] + ["{}".format(m.result()) for m in training_metrics]) + "\n")

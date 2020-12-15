@@ -1,5 +1,4 @@
 from typing import Callable
-from gin.config import _order_by_signature
 from tensorflow import keras
 from tf_agents.environments.py_environment import PyEnvironment
 from tf_agents.specs import array_spec
